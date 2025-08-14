@@ -1,9 +1,13 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import { listingKeyFrom } from "@/lib/utils";
 import { NormalizedReview } from "@/lib/types";
 
 type Row = {
   id: string;
-  listingId: string | null; // allow null
+  listingId: string | null;
   listingName: string;
   submittedAt: string;
   overallRating: number | null;
@@ -18,11 +22,55 @@ export default function ReviewsTable({
   approvedMap,
   onToggleApprove,
 }: {
-  items: Row[];                                  // use Row[]
+  items: Row[];
   dense: boolean;
   approvedMap: Record<string, string[]> | undefined;
   onToggleApprove: (r: NormalizedReview, approved: boolean) => Promise<void>;
 }) {
+  const [pending, setPending] = useState<Record<string, boolean>>({});
+  const [optimistic, setOptimistic] = useState<Record<string, boolean | undefined>>({});
+
+  const approvedSet = useMemo(() => {
+    const s = new Set<string>();
+    if (approvedMap) {
+      for (const ids of Object.values(approvedMap)) {
+        for (const id of ids) s.add(id);
+      }
+    }
+    return s;
+  }, [approvedMap]);
+
+  const handleToggle = async (r: Row, targetApproved: boolean) => {
+    const ok = window.confirm(
+      targetApproved
+        ? "Approve this review for the public website?"
+        : "Unapprove this review so it no longer shows on the public website?"
+    );
+    if (!ok) return;
+
+    try {
+      setPending((p) => ({ ...p, [r.id]: true }));
+      setOptimistic((o) => ({ ...o, [r.id]: targetApproved }));
+
+      await onToggleApprove(r as unknown as NormalizedReview, targetApproved);
+
+      setPending((p) => {
+        const { [r.id]: _, ...rest } = p;
+        return rest;
+      });
+    } catch {
+      setOptimistic((o) => {
+        const { [r.id]: _, ...rest } = o;
+        return rest;
+      });
+      setPending((p) => {
+        const { [r.id]: _, ...rest } = p;
+        return rest;
+      });
+      alert("Sorry, that action failed. Please try again.");
+    }
+  };
+
   return (
     <div className="rounded border bg-white/60">
       <table className={`w-full ${dense ? "text-xs" : "text-sm"}`}>
@@ -39,14 +87,27 @@ export default function ReviewsTable({
         </thead>
         <tbody>
           {items.map((r, idx) => {
-            const key = listingKeyFrom(String(r.listingId ?? ""), r.listingName); // guard null
-            const isApproved = approvedMap?.[key]?.includes(r.id);
+            const key = listingKeyFrom(String(r.listingId ?? ""), r.listingName);
+            const serverApproved = approvedSet.has(r.id);
+            const effectiveApproved =
+              optimistic[r.id] !== undefined ? optimistic[r.id]! : serverApproved;
+            const isRowPending = !!pending[r.id];
+
             return (
               <tr key={r.id} className={`${idx % 2 ? "bg-white/40" : ""} align-top border-t`}>
                 <td className="p-2 whitespace-nowrap">
                   {new Date(r.submittedAt).toLocaleDateString()}
                 </td>
-                <td className="hidden p-2 sm:table-cell">{r.listingName}</td>
+                <td className="hidden p-2 sm:table-cell">
+                  <Link
+                    href={`/listing/${key}`}
+                    className="text-emerald-700 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {r.listingName}
+                  </Link>
+                </td>
                 <td className="hidden p-2 md:table-cell">{r.channel}</td>
                 <td className="p-2">{r.overallRating ?? "-"}</td>
                 <td className="hidden p-2 md:table-cell">
@@ -60,7 +121,7 @@ export default function ReviewsTable({
                 </td>
                 <td className="max-w-[380px] p-2" title={r.text}>
                   <div className="flex items-center gap-2">
-                    {isApproved && (
+                    {effectiveApproved && (
                       <span className="shrink-0 rounded border border-emerald-200 bg-emerald-50 px-1 py-0.5 text-[10px] text-emerald-700">
                         Approved
                       </span>
@@ -69,21 +130,35 @@ export default function ReviewsTable({
                   </div>
                 </td>
                 <td className="p-2">
-                  <div className="flex gap-2">
-                    {!isApproved && (
+                  <div className="flex items-center gap-2">
+                    {!effectiveApproved && (
                       <button
-                        className="rounded border px-2 py-1 hover:bg-green-50"
-                        onClick={() => onToggleApprove(r as unknown as NormalizedReview, true)}
+                        className="rounded border px-2 py-1 hover:bg-green-50 disabled:opacity-50"
+                        disabled={isRowPending}
+                        onClick={() => handleToggle(r, true)}
                       >
-                        Approve
+                        {isRowPending ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Spinner /> Approving…
+                          </span>
+                        ) : (
+                          "Approve"
+                        )}
                       </button>
                     )}
-                    {isApproved && (
+                    {effectiveApproved && (
                       <button
-                        className="rounded border px-2 py-1 hover:bg-red-50"
-                        onClick={() => onToggleApprove(r as unknown as NormalizedReview, false)}
+                        className="rounded border px-2 py-1 hover:bg-red-50 disabled:opacity-50"
+                        disabled={isRowPending}
+                        onClick={() => handleToggle(r, false)}
                       >
-                        Unapprove
+                        {isRowPending ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Spinner /> Unapproving…
+                          </span>
+                        ) : (
+                          "Unapprove"
+                        )}
                       </button>
                     )}
                   </div>
@@ -101,5 +176,25 @@ export default function ReviewsTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg
+      className="h-3 w-3 animate-spin"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
+      <path
+        d="M22 12a10 10 0 0 1-10 10"
+        stroke="currentColor"
+        strokeWidth="3"
+        fill="none"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }

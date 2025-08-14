@@ -66,6 +66,8 @@ export default function FiltersBar({
     setToDate("");
   };
 
+  const ratingOptions = Array.from({ length: 10 }, (_, i) => String(i + 1));
+
   return (
     <section className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       {/* Row 1 */}
@@ -87,19 +89,24 @@ export default function FiltersBar({
           </select>
         </label>
 
-        {/* Min rating */}
+        {/* Min rating dropdown */}
         <label className="md:col-span-2">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Min rating (0 to 10)</span>
-          <input
+          <span className="mb-1 block text-xs font-medium text-slate-600">Min rating</span>
+          <select
             className="w-full rounded-lg border border-gray-200 px-3 py-2"
-            type="number"
-            min={0}
-            max={10}
-            step="0.5"
-            placeholder="0"
-            value={Number.isFinite(minRating) ? minRating : 0}
-            onChange={(e) => setMinRating(Number(e.target.value))}
-          />
+            value={minRating === 0 ? "" : String(minRating)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setMinRating(v === "" ? 0 : Number(v));
+            }}
+          >
+            <option value="">Any</option>
+            {ratingOptions.map((val) => (
+              <option key={val} value={val}>
+                {val}
+              </option>
+            ))}
+          </select>
         </label>
 
         {/* Category */}
