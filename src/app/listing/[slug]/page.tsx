@@ -31,33 +31,50 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
   const stars5 = avg10 != null ? Math.round((avg10 / 10) * 5) : 0;
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <header className="mb-6">
-        <h1 className="text-3xl font-semibold text-emerald-900">{listingName}</h1>
-        <div className="mt-2 flex items-center gap-3">
+    <>
+      {/* Navbar */}
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-gray-100">
+        <div className="max-w-[1180px] mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="text-amber-500 text-lg" aria-label={`rating ${avg10 ?? '-'} / 10`}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <span key={i}>{i < stars5 ? '★' : '☆'}</span>
-              ))}
-            </div>
-            {avg10 != null && <span className="text-emerald-900 font-medium">{avg10.toFixed(1)}/10</span>}
+            <div className="w-9 h-9 rounded-lg bg-emerald-900 grid place-items-center text-white font-bold">FL</div>
+            <span className="sr-only">Flex Living</span>
           </div>
-          <span className="text-sm text-gray-500">{count} review{count === 1 ? '' : 's'}</span>
+          <nav className="hidden md:flex items-center gap-8 text-[15px]">
+            <a className="hover:opacity-80" href="#">Flex Living</a>
+            <a className="hover:opacity-80" href="#">All listings</a>
+            <a className="hover:opacity-80" href="#">About Us</a>
+            <a className="hover:opacity-80" href="#">Contact Us</a>
+          </nav>
         </div>
       </header>
 
-      {count === 0 ? (
-        <div className="text-gray-500">No reviews selected yet.</div>
-      ) : (
-        <section className="space-y-4">
-          {items.map((r) => (
-            <ReviewCard key={r.id} review={r} />
-          ))}
-        </section>
-      )}
-    </div>
+      {/* Main content */}
+      <div className="max-w-4xl mx-auto p-6">
+        <header className="mb-6">
+          <h1 className="text-3xl font-semibold text-emerald-900">{listingName}</h1>
+          <div className="mt-2 flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="text-amber-500 text-lg" aria-label={`rating ${avg10 ?? '-'} / 10`}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i}>{i < stars5 ? '★' : '☆'}</span>
+                ))}
+              </div>
+              {avg10 != null && <span className="text-emerald-900 font-medium">{avg10.toFixed(1)}/10</span>}
+            </div>
+            <span className="text-sm text-gray-500">{count} review{count === 1 ? '' : 's'}</span>
+          </div>
+        </header>
+
+        {count === 0 ? (
+          <div className="text-gray-500">No reviews selected yet.</div>
+        ) : (
+          <section className="space-y-4">
+            {items.map((r) => (
+              <ReviewCard key={r.id} review={r} />
+            ))}
+          </section>
+        )}
+      </div>
+    </>
   );
 }
-
-
