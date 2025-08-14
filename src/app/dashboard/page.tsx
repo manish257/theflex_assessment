@@ -21,13 +21,11 @@ export default function DashboardPage() {
   const [minRating, setMinRating] = useState<number>(0);
   const [category, setCategory] = useState<string>("");
   const [channel, setChannel] = useState<string>("");
-  const [rtype, setRtype] = useState<string>("");
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
   const [sortBy, setSortBy] = useState<"date" | "rating">("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [tab, setTab] = useState<"all" | "approved">("all");
-  const [dense, setDense] = useState<boolean>(false);
 
   // Main query for the visible dataset
   const query = new URLSearchParams({
@@ -35,7 +33,6 @@ export default function DashboardPage() {
     ...(minRating ? { minRating: String(minRating) } : {}),
     ...(category ? { category } : {}),
     ...(channel ? { channel } : {}),
-    ...(rtype ? { type: rtype } : {}),
     ...(fromDate ? { from: fromDate } : {}),
     ...(toDate ? { to: toDate } : {}),
     sortBy,
@@ -53,7 +50,6 @@ export default function DashboardPage() {
     ...(minRating ? { minRating: String(minRating) } : {}),
     ...(category ? { category } : {}),
     ...(channel ? { channel } : {}),
-    ...(rtype ? { type: rtype } : {}),
     ...(fromDate ? { from: fromDate } : {}),
     ...(toDate ? { to: toDate } : {}),
     pageSize: "200",
@@ -215,7 +211,7 @@ export default function DashboardPage() {
       {/* Per property table */}
       <PerformanceTable
         items={data?.items ?? []}
-        dense={dense}
+        dense={false}
         isLoading={isLoading}
       />
 
@@ -226,7 +222,7 @@ export default function DashboardPage() {
       {tab === "all" && (
         <ReviewsTable
           items={data?.items ?? []}
-          dense={dense}
+          dense={false}
           approvedMap={approvedMapData?.map}
           onToggleApprove={onToggleApprove}
         />
@@ -253,7 +249,7 @@ export default function DashboardPage() {
           // All listings + Approved: show approved-only filtered table
           <ReviewsTable
             items={approvedOnlyItems}
-            dense={dense}
+            dense={false}
             approvedMap={approvedMapData?.map}
             onToggleApprove={onToggleApprove}
           />

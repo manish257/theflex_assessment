@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import Navbar from "@/components/NavBar";
+import Navbar from "@/components/Navbar";
 import GallerySection from "@/components/GallerySection";
 import ReviewsSection from "@/components/ReviewsSection";
 import Container from "@/components/Container";
