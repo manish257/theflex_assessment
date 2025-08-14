@@ -33,12 +33,12 @@ export default function NavBar() {
     </nav>
 
     {/* Desktop action kept close to nav */}
-    <a
-      href="#inquire"
+    <Link
+      href="/signin"
       className="hidden sm:inline-flex items-center rounded-full bg-emerald-900 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-95"
     >
-      Book now
-    </a>
+      Sign in
+    </Link>
 
     {/* Mobile menu button */}
     <button
@@ -72,13 +72,13 @@ export default function NavBar() {
               <Link className="rounded-lg px-3 py-2 hover:bg-gray-50" href="#" onClick={() => setOpen(false)}>
                 Contact
               </Link>
-              <a
-                href="#inquire"
+              <Link
+                href="/signin"
                 className="mt-1 rounded-full bg-emerald-900 px-4 py-2 text-center text-sm font-semibold text-white"
                 onClick={() => setOpen(false)}
               >
-                Book now
-              </a>
+                Sign in
+              </Link>
             </nav>
           </div>
         )}

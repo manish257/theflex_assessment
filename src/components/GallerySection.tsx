@@ -78,9 +78,14 @@ export default function GallerySection() {
                 <div className="rounded-full border border-gray-200 px-4 py-3">Select Dates</div>
                 <div className="rounded-full border border-gray-200 px-4 py-3">1</div>
                 <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-                  <button className="w-full rounded-full bg-emerald-900 py-3 font-semibold text-white sm:flex-1">
+                  <a
+                    href="https://theflex.global/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full rounded-full bg-emerald-900 py-3 font-semibold text-white sm:flex-1 text-center hover:bg-emerald-800 transition-colors"
+                  >
                     Book now
-                  </button>
+                  </a>
                   <button className="w-full rounded-full border border-gray-200 bg-white py-3 sm:flex-1">
                     Send Inquiry
                   </button>
