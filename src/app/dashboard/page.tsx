@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ReviewsResponse, NormalizedReview } from "@/lib/types";
 import { listingKeyFrom } from "@/lib/utils";
 
@@ -29,29 +29,7 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<"all" | "approved">("all");
   const [dense, setDense] = useState<boolean>(false);
 
-  // Let FiltersBar toggle tabs without prop drilling if you keep its CustomEvent approach
-  useEffect(() => {
-    const onSetTab = (e: Event) => {
-      const detail = (e as CustomEvent).detail as "all" | "approved";
-      setTab(detail);
-      // reflect active styles
-      const a = document.getElementById("tab-all");
-      const b = document.getElementById("tab-approved");
-      if (a && b) {
-        if (detail === "all") {
-          a.className = "px-3 py-2 text-sm bg-emerald-600 text-white";
-          b.className = "px-3 py-2 text-sm bg-white";
-        } else {
-          a.className = "px-3 py-2 text-sm bg-white";
-          b.className = "px-3 py-2 text-sm bg-emerald-600 text-white";
-        }
-      }
-    };
-    window.addEventListener("dash:setTab", onSetTab as EventListener);
-    return () =>
-      window.removeEventListener("dash:setTab", onSetTab as EventListener);
-  }, []);
-
+  // Main query (affected by selected listing)
   const query = new URLSearchParams({
     ...(listing ? { listing } : {}),
     ...(minRating ? { minRating: String(minRating) } : {}),
@@ -70,17 +48,35 @@ export default function DashboardPage() {
     fetcher
   );
 
-  // Listing dropdown options
+  // Secondary query for the listing dropdown (never filtered by listing)
+  const queryForOptions = new URLSearchParams({
+    ...(minRating ? { minRating: String(minRating) } : {}),
+    ...(category ? { category } : {}),
+    ...(channel ? { channel } : {}),
+    ...(rtype ? { type: rtype } : {}),
+    ...(fromDate ? { from: fromDate } : {}),
+    ...(toDate ? { to: toDate } : {}),
+    pageSize: "200",
+    sortBy: "date",
+    sortDir: "desc",
+  }).toString();
+
+  const { data: dataForOptions } = useSWR<ReviewsResponse>(
+    `/api/reviews/hostaway?${queryForOptions}`,
+    fetcher
+  );
+
+  // Build dropdown options from the unfiltered-by-listing dataset
   const listingOptions = useMemo(() => {
     const set = new Map<string, string>();
-    for (const r of data?.items ?? []) {
+    for (const r of dataForOptions?.items ?? []) {
       const key = listingKeyFrom(r.listingId, r.listingName);
       if (!set.has(key)) set.set(key, r.listingName);
     }
     return Array.from(set.entries()).map(([key, name]) => ({ key, name }));
-  }, [data]);
+  }, [dataForOptions]);
 
-  // Approved map
+  // Approved map for badges
   const approvedMapUrl = useMemo(() => {
     if (!data?.items) return null;
     const keys = Array.from(
@@ -96,7 +92,7 @@ export default function DashboardPage() {
     fetcher
   );
 
-  // Current listing
+  // Current listing key
   const currentListingKey = useMemo(() => {
     const r =
       (data?.items ?? []).find(
@@ -107,7 +103,7 @@ export default function DashboardPage() {
     return "";
   }, [data, listing]);
 
-  // Approved tab data
+  // Approved-tab data
   const { data: approvedData, mutate: refreshApproved } = useSWR<{
     items: NormalizedReview[];
   }>(
@@ -119,7 +115,7 @@ export default function DashboardPage() {
     fetcher
   );
 
-  // Approve/unapprove
+  // Approve / Unapprove
   const onToggleApprove = async (r: NormalizedReview, approved: boolean) => {
     const listingKey = r.listingId
       ? `listing-${r.listingId}`
@@ -172,6 +168,8 @@ export default function DashboardPage() {
 
       {/* Filters */}
       <FiltersBar
+        tab={tab}
+        setTab={setTab}
         listing={listing}
         setListing={setListing}
         minRating={minRating}
@@ -180,8 +178,6 @@ export default function DashboardPage() {
         setCategory={setCategory}
         channel={channel}
         setChannel={setChannel}
-        rtype={rtype}
-        setRtype={setRtype}
         fromDate={fromDate}
         setFromDate={setFromDate}
         toDate={toDate}
@@ -190,8 +186,6 @@ export default function DashboardPage() {
         setSortBy={setSortBy}
         sortDir={sortDir}
         setSortDir={setSortDir}
-        dense={dense}
-        setDense={setDense}
         listingOptions={listingOptions}
       />
 
@@ -233,7 +227,7 @@ export default function DashboardPage() {
           onUnapprove={(r) => onToggleApprove(r, false)}
           onRefresh={async () => {
             await refreshApproved?.();
-          }} // ensures type matches
+          }}
         />
       )}
     </div>
