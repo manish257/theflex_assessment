@@ -29,7 +29,7 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<"all" | "approved">("all");
   const [dense, setDense] = useState<boolean>(false);
 
-  // Main query (affected by selected listing)
+  // Main query for the visible dataset
   const query = new URLSearchParams({
     ...(listing ? { listing } : {}),
     ...(minRating ? { minRating: String(minRating) } : {}),
@@ -48,7 +48,7 @@ export default function DashboardPage() {
     fetcher
   );
 
-  // Secondary query for the listing dropdown (never filtered by listing)
+  // Separate query for the listing dropdown that never filters by "listing"
   const queryForOptions = new URLSearchParams({
     ...(minRating ? { minRating: String(minRating) } : {}),
     ...(category ? { category } : {}),
@@ -66,7 +66,7 @@ export default function DashboardPage() {
     fetcher
   );
 
-  // Build dropdown options from the unfiltered-by-listing dataset
+  // Dropdown options built from the options dataset so it always shows all relevant listings
   const listingOptions = useMemo(() => {
     const set = new Map<string, string>();
     for (const r of dataForOptions?.items ?? []) {
@@ -76,7 +76,7 @@ export default function DashboardPage() {
     return Array.from(set.entries()).map(([key, name]) => ({ key, name }));
   }, [dataForOptions]);
 
-  // Approved map for badges
+  // Approved map for currently visible listings
   const approvedMapUrl = useMemo(() => {
     if (!data?.items) return null;
     const keys = Array.from(
@@ -87,12 +87,13 @@ export default function DashboardPage() {
       keys.join(",")
     )}`;
   }, [data]);
+
   const { data: approvedMapData } = useSWR<{ map: Record<string, string[]> }>(
     approvedMapUrl,
     fetcher
   );
 
-  // Current listing key
+  // Current listing key derived from selection
   const currentListingKey = useMemo(() => {
     const r =
       (data?.items ?? []).find(
@@ -103,7 +104,7 @@ export default function DashboardPage() {
     return "";
   }, [data, listing]);
 
-  // Approved-tab data
+  // Approved reviews for a specific listing (server-provided)
   const { data: approvedData, mutate: refreshApproved } = useSWR<{
     items: NormalizedReview[];
   }>(
@@ -114,6 +115,29 @@ export default function DashboardPage() {
       : null,
     fetcher
   );
+
+  // Client filter for "All listings" + "Approved" using approved map
+  const approvedOnlyItems = useMemo(() => {
+    if (!approvedMapData?.map) return [];
+    const items = data?.items ?? [];
+    return items.filter((r) => {
+      const key = listingKeyFrom(r.listingId, r.listingName);
+      return approvedMapData.map[key]?.includes(r.id);
+    });
+  }, [data, approvedMapData]);
+
+  // Counts for clearer tab labels
+  const allCount = data?.items?.length ?? 0;
+  const approvedCount =
+    currentListingKey && tab === "approved"
+      ? approvedData?.items?.length ?? 0
+      : approvedOnlyItems.length;
+
+  // Chart props
+  const labels = data?.aggregates.timeSeriesMonthly?.map((t) => t.month) ?? [];
+  const counts = data?.aggregates.timeSeriesMonthly?.map((t) => t.count) ?? [];
+  const avgRatings =
+    data?.aggregates.timeSeriesMonthly?.map((t) => t.avgRating ?? null) ?? [];
 
   // Approve / Unapprove
   const onToggleApprove = async (r: NormalizedReview, approved: boolean) => {
@@ -127,12 +151,6 @@ export default function DashboardPage() {
     });
     if (listingKey === currentListingKey) await refreshApproved?.();
   };
-
-  // Chart props
-  const labels = data?.aggregates.timeSeriesMonthly?.map((t) => t.month) ?? [];
-  const counts = data?.aggregates.timeSeriesMonthly?.map((t) => t.count) ?? [];
-  const avgRatings =
-    data?.aggregates.timeSeriesMonthly?.map((t) => t.avgRating ?? null) ?? [];
 
   return (
     <div className="mx-auto max-w-7xl p-6">
@@ -187,6 +205,8 @@ export default function DashboardPage() {
         sortDir={sortDir}
         setSortDir={setSortDir}
         listingOptions={listingOptions}
+        allCount={allCount}
+        approvedCount={approvedCount}
       />
 
       {/* Trends chart */}
@@ -202,7 +222,7 @@ export default function DashboardPage() {
       {/* Category insights */}
       <CategoryInsights avgByCategory={data?.aggregates.avgByCategory} />
 
-      {/* All reviews or Approved panel */}
+      {/* All reviews or Approved views */}
       {tab === "all" && (
         <ReviewsTable
           items={data?.items ?? []}
@@ -212,24 +232,32 @@ export default function DashboardPage() {
         />
       )}
 
-      {tab === "approved" && (
-        <ApprovedPanel
-          listingName={
-            currentListingKey
-              ? listing ||
-                (listingOptions.find((o) => o.key === currentListingKey)
-                  ?.name ??
-                  "")
-              : undefined
-          }
-          listingKey={currentListingKey || null}
-          items={approvedData?.items}
-          onUnapprove={(r) => onToggleApprove(r, false)}
-          onRefresh={async () => {
-            await refreshApproved?.();
-          }}
-        />
-      )}
+      {tab === "approved" &&
+        (currentListingKey ? (
+          <ApprovedPanel
+            listingName={
+              currentListingKey
+                ? listing ||
+                  (listingOptions.find((o) => o.key === currentListingKey)?.name ??
+                    "")
+                : undefined
+            }
+            listingKey={currentListingKey || null}
+            items={approvedData?.items}
+            onUnapprove={(r) => onToggleApprove(r, false)}
+            onRefresh={async () => {
+              await refreshApproved?.();
+            }}
+          />
+        ) : (
+          // All listings + Approved: show approved-only filtered table
+          <ReviewsTable
+            items={approvedOnlyItems}
+            dense={dense}
+            approvedMap={approvedMapData?.map}
+            onToggleApprove={onToggleApprove}
+          />
+        ))}
     </div>
   );
 }

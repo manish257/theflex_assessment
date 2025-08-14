@@ -22,6 +22,8 @@ export default function FiltersBar({
   sortDir,
   setSortDir,
   listingOptions,
+  allCount,
+  approvedCount,
 }: {
   tab: "all" | "approved";
   setTab: (v: "all" | "approved") => void;
@@ -51,6 +53,9 @@ export default function FiltersBar({
   setSortDir: (v: "asc" | "desc") => void;
 
   listingOptions: Option[];
+
+  allCount: number;
+  approvedCount: number;
 }) {
   const clearAll = () => {
     setListing("");
@@ -139,8 +144,9 @@ export default function FiltersBar({
                   ? "bg-emerald-700 text-white ring-2 ring-emerald-200"
                   : "bg-white text-slate-700 hover:bg-gray-50"
               }`}
+              title="Show all reviews"
             >
-              All
+              All reviews{typeof allCount === "number" ? ` (${allCount})` : ""}
             </button>
             <button
               type="button"
@@ -152,8 +158,10 @@ export default function FiltersBar({
                   ? "bg-emerald-700 text-white ring-2 ring-emerald-200"
                   : "bg-white text-slate-700 hover:bg-gray-50"
               }`}
+              title="Only reviews approved to appear on the public website"
             >
-              Approved
+              Approved for website
+              {typeof approvedCount === "number" ? ` (${approvedCount})` : ""}
             </button>
           </div>
         </div>
