@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Container from "./Container";
 
-export default function Navbar() {
+export default function NavBar() {
   const [open, setOpen] = useState(false);
 
   return (

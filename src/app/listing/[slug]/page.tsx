@@ -1,12 +1,22 @@
 import { headers } from "next/headers";
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/NavBar";
 import GallerySection from "@/components/GallerySection";
 import ReviewsSection from "@/components/ReviewsSection";
 import Container from "@/components/Container";
 import GoodToKnow from "@/components/GoodToKnow";
 import Footer from "@/components/Footer";
 
-async function getApproved(slug: string) {
+type Review = {
+  id: string;
+  listingName: string;
+  overallRating: number | null;
+  categories: { category: string; rating: number | null }[];
+  text: string;
+  authorName: string | null;
+  submittedAt: string;
+};
+
+async function getApproved(slug: string): Promise<Review[]> {
   const listingKey = slug.startsWith("listing-") ? slug : `listing-${slug}`;
   const h = await headers();
   const host = h.get("host") ?? "localhost:3000";
@@ -16,10 +26,13 @@ async function getApproved(slug: string) {
     `${base}/api/reviews/public?listingKey=${encodeURIComponent(listingKey)}`,
     { cache: "no-store" }
   );
-  if (!res.ok) return [] as any[];
+
+  if (!res.ok) return [] as Review[];
+
   const json = await res.json();
-  return json.items;
+  return json.items as Review[];
 }
+
 
 export default async function ListingPage({
   params,
