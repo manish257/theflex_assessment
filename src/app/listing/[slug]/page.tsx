@@ -1,5 +1,6 @@
 // Public listing page showing only approved reviews
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import ReviewCard from '@/components/ReviewCard';
 
 /* simple container */
@@ -114,7 +115,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
         <Container>
           <div className="flex h-16 items-center justify-between">
             {/* brand */}
-            <a href="/" className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3">
               <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-900 text-white">
                 FL
               </div>
@@ -122,7 +123,7 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
                 <div className="text-sm font-semibold text-emerald-900">Flex Living</div>
                 <div className="text-xs text-emerald-700/80">Stays that feel like home</div>
               </div>
-            </a>
+            </Link>
 
             {/* nav links */}
             <nav className="hidden md:flex items-center gap-6 text-[15px]">
@@ -176,17 +177,37 @@ export default async function ListingPage({ params }: { params: Promise<{ slug: 
       </div>
 
       {/* reviews */}
-      <div className="mx-auto max-w-4xl p-6">
-        {count === 0 ? (
-          <div className="text-gray-500">No reviews selected yet.</div>
-        ) : (
-          <section className="space-y-4">
-            {items.map((r) => (
-              <ReviewCard key={r.id} review={r} />
-            ))}
-          </section>
-        )}
-      </div>
+      <section id="reviews" className="mt-10">
+        <Container>
+          {/* section header */}
+          <div className="mb-5 flex items-center gap-3">
+            <h2 className="text-2xl font-semibold text-emerald-950">Reviews</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-amber-500 text-lg">★</span>
+              {avg10 != null && <span className="font-medium text-slate-900">{avg10.toFixed(1)}</span>}
+              <span className="text-sm text-gray-500">({count} {count === 1 ? 'review' : 'reviews'})</span>
+            </div>
+          </div>
+
+          {count === 0 ? (
+            <div className="text-gray-500">No reviews selected yet.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {items.map((r) => (
+                <div
+                  key={r.id}
+                  className="
+                    rounded-2xl border border-gray-200 bg-white p-5 shadow-sm
+                    [&>div]:border-0 [&>div]:p-0 [&>div]:bg-transparent
+                  "
+                >
+                  <ReviewCard review={r} />
+                </div>
+              ))}
+            </div>
+          )}
+        </Container>
+      </section>
     </>
   );
 }
